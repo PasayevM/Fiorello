@@ -1,0 +1,229 @@
+﻿using Fiorello2.Models;
+using Fiorello2.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Fiorello2.Areas.Admin.Controllers
+{
+    [Area("Admin")]
+    [Authorize(Roles = "Admin")]
+    public class UsersController : Controller
+    {
+        private readonly UserManager<AppUser> _userManager;
+        private readonly SignInManager<AppUser> _signInManager;
+        public UsersController(UserManager<AppUser> userManager,
+                               SignInManager<AppUser> signInManager)
+        {
+            _userManager = userManager;
+            _signInManager = signInManager;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            
+            List<AppUser> appUsers = await _userManager.Users.OrderByDescending(user=>user.Id).ToListAsync();
+            List<UserVM> userVMs = new List<UserVM>();
+
+            foreach (AppUser user in appUsers)
+            {
+                UserVM userVM = new UserVM
+                {
+                    Id = user.Id,
+                    FullName = user.Name + " " + user.SurName,
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    IsDeactive = user.IsDeactive,
+                    Role = (await _userManager.GetRolesAsync(user)).FirstOrDefault(),
+                };
+                userVMs.Add(userVM);
+            }
+            return View(userVMs);
+        }
+
+        public IActionResult Create()
+        {
+
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(RegisterVM registerVM, string roleName)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View();
+            }
+            AppUser appUser = new AppUser
+            {
+                Name = registerVM.Name,
+                SurName = registerVM.SurName,
+                UserName = registerVM.UserName,
+                Email = registerVM.Email,
+
+            };
+            IdentityResult identityResult = await _userManager.CreateAsync(appUser, registerVM.Password);
+            if (!identityResult.Succeeded)
+            {
+                foreach (IdentityError error in identityResult.Errors)
+                {
+                    ModelState.AddModelError("", error.Description);
+                }
+                return View();
+            }
+            await _userManager.AddToRoleAsync(appUser, roleName);
+            return RedirectToAction("Index");
+        }
+
+
+        public async Task<IActionResult> Activity(string id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+            AppUser user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return BadRequest();
+            }
+            if (user.IsDeactive == true)
+            {
+                user.IsDeactive = false;
+
+            }
+            else
+            {
+                user.IsDeactive = true;
+            }
+            await _userManager.UpdateAsync(user);
+            return RedirectToAction("Index");
+        }
+
+        public async Task<IActionResult> Update(string id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+            AppUser user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return BadRequest();
+            }
+            UpdateVM updateVM = new UpdateVM
+            {
+                Username = user.UserName,
+                Name = user.Name,
+                Surname = user.SurName,
+                Email = user.Email,
+                Role = (await _userManager.GetRolesAsync(user)).First()
+        };
+           
+            return View(updateVM);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Update(string id, UpdateVM updateVM, string roleName)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+            AppUser user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return BadRequest();
+            }
+            string oldRole = (await _userManager.GetRolesAsync(user)).First();
+            UpdateVM dbupdateVM = new UpdateVM
+            {
+                Username = user.UserName,
+                Name = user.Name,
+                Surname = user.SurName,
+                Email = user.Email,
+                Role = (await _userManager.GetRolesAsync(user)).First()
+            };
+
+            user.Name = updateVM.Name;
+            user.SurName = updateVM.Surname;
+            user.UserName = updateVM.Username;
+            user.Email = updateVM.Email;
+
+
+           IdentityResult reIdentityResult = await _userManager.RemoveFromRoleAsync(user, oldRole);
+            if (!reIdentityResult.Succeeded)
+            {
+                foreach (IdentityError error in reIdentityResult.Errors)
+                {
+                    ModelState.AddModelError("", error.Description);
+                }
+                return View();
+            }
+           IdentityResult addIdentityResult = await _userManager.AddToRoleAsync(user, roleName);
+            if (!addIdentityResult.Succeeded)
+            {
+                foreach (IdentityError error in addIdentityResult.Errors)
+                {
+                    ModelState.AddModelError("", error.Description);
+                }
+                return View();
+            }
+            await _userManager.UpdateAsync(user);
+            //if (User.Identity.Name == user.UserName)
+            //{
+            //    await _signInManager.SignOutAsync();
+            //    await _signInManager.SignInAsync(user,true);
+            //}
+            return RedirectToAction("Index");
+        }
+
+        public async Task<IActionResult> ResetPassword(string id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+            AppUser user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return BadRequest();
+            }
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(string id, ResetPasswordVM reset)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+            AppUser user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return BadRequest();
+            }
+            string token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            IdentityResult identityResult = await _userManager.ResetPasswordAsync(user , token ,reset.Password);
+            if (!identityResult.Succeeded)
+            {
+                foreach (IdentityError error in identityResult.Errors)
+                {
+                    ModelState.AddModelError("", error.Description);
+                }
+                return View();
+            }
+            return RedirectToAction("Index");
+        }
+    }   
+
+
+}

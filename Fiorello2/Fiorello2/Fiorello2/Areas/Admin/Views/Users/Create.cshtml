@@ -1,0 +1,69 @@
+﻿@model RegisterVM
+
+             <div class="row">
+                <div class="col-12">
+                  <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                      <h5 class="mb-0">User Create</h5>
+                      <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    </div>
+                    <div class="card-body">
+                      <form method="post">
+                        <div class="mb-3">
+                          <label class="form-label" asp-for="Name">Name</label>
+                          <input asp-for="Name" class="form-control">
+                          <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                          <label class="form-label" asp-for="SurName">SurName</label>
+                          <input asp-for="SurName" class="form-control">
+                          <span asp-validation-for="SurName" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                          <label class="form-label" asp-for="UserName">UserName</label>
+                          <input asp-for="UserName" class="form-control">
+                          <span asp-validation-for="UserName" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                          <label class="form-label" asp-for="Email">Email</label>
+                          <input asp-for="Email" class="form-control">
+                          <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                         <div class="form-group">
+                            <label for="exampleFormControlSelect1">Select Role</label>
+                            <select class="form-control" name="roleName">
+
+                                <option value="Admin">Admin</option>
+                                <option value="Member">Member</option>
+
+                            </select>
+                          </div>
+                        
+                        <div class="mb-3">
+                          <label class="form-label" asp-for="Password">Password</label>
+                          <input asp-for="Password" class="form-control">
+                          <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                          <label class="form-label" asp-for="CheckPassword">CheckPassword</label>
+                          <input asp-for="CheckPassword" class="form-control">
+                          <span asp-validation-for="CheckPassword" class="text-danger"></span>
+                        </div>
+
+                        
+                        <button type="submit" class="btn btn-success">Submit</button>
+                        <a asp-action="Index" class="btn btn-primary">Go Back</a>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+             </div>
+
+@section Scripts{
+               <partial name="_ValidationScriptsPartial" />
+   }
